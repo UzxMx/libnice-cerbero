@@ -1,0 +1,49 @@
+Prepare the host
+
+Mac OS X host
+
+sudo mkdir -p /Library/Frameworks/OpenWebRTC.framework
+sudo chown -R $UID /Library/Frameworks/OpenWebRTC.framework/
+In ~/cerbero:
+
+mkdir -p dist
+mkdir -p /Library/Frameworks/OpenWebRTC.framework/Versions/0.3
+ln -sf /Library/Frameworks/OpenWebRTC.framework/Versions/0.3 dist/darwin_x86_64
+Linux host
+
+sudo mkdir -p /opt/openwebrtc-0.3
+sudo chown -R $UID /opt/openwebrtc-0.3
+Build
+
+First we fetch, then we bootstrap, then we package. The process is the same when building fresh as when updating.
+
+Bootstrapping is required for building anything with a particular config (-c argument). That is you need to run the bootstrap for each target.
+
+Mac OS X host target
+
+cd ~/cerbero \
+&& ./cerbero-uninstalled -c config/osx-x86-64.cbc fetch-package --full-reset --reset-rdeps openwebrtc \
+&& ./cerbero-uninstalled -c config/osx-x86-64.cbc bootstrap \
+&& ./cerbero-uninstalled -c config/osx-x86-64.cbc package -f openwebrtc
+iOS Universal cross-compile (armv7, armv7s, arm64, x86) target
+
+NOTE: You MUST build for your host first before cross-compiling for iOS. This is because some of the build results are re-used for cross-compiling.
+
+cd ~/cerbero \
+&& ./cerbero-uninstalled -c config/cross-ios-universal.cbc fetch-package --full-reset --reset-rdeps openwebrtc \
+&& ./cerbero-uninstalled -c config/cross-ios-universal.cbc bootstrap \
+&& ./cerbero-uninstalled -c config/cross-ios-universal.cbc package -f openwebrtc
+Android cross-compile target
+
+NOTE: You MUST build for your host first before cross-compiling for Android. This is because some of the build results are re-used for cross-compiling.
+
+cd ~/cerbero \
+&& ./cerbero-uninstalled -c config/cross-android-armv7.cbc fetch-package --full-reset --reset-rdeps openwebrtc \
+&& ./cerbero-uninstalled -c config/cross-android-armv7.cbc bootstrap \
+&& ./cerbero-uninstalled -c config/cross-android-armv7.cbc package -f openwebrtc
+Linux target
+
+cd ~/cerbero \
+&& ./cerbero-uninstalled -c config/linux.cbc fetch-package --full-reset --reset-rdeps openwebrtc \
+&& ./cerbero-uninstalled -c config/linux.cbc bootstrap \
+&& ./cerbero-uninstalled -c config/linux.cbc package -f openwebrtc

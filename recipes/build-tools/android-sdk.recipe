@@ -1,0 +1,77 @@
+# Copyright (c) 2014-2015, Centricular Ltd. All rights reserved.
+# Copyright (c) 2015, Ericsson AB. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this
+# list of conditions and the following disclaimer in the documentation and/or other
+# materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+# INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+# OF SUCH DAMAGE.
+
+# -*- Mode: Python -*- vi:si:et:sw=4:sts=4:ts=4:syntax=python
+
+import os
+import shutil
+
+class Recipe(recipe.Recipe):
+    """
+    Ships the ADT Bundle (Android SDK)
+    """
+    _name = 'adt-bundle'
+    name = 'android-sdk'
+    version = '20140702'
+    stype = SourceType.TARBALL
+    url = 'https://dl.google.com/android/adt/' + _name + \
+          '-{0}-{1}-' + version + '.zip'
+    licenses = [License.Apachev2]
+    btype = BuildType.CUSTOM
+
+    def prepare(self):
+        platform = self.config.platform
+        if self.config.platform == Platform.DARWIN:
+            platform = 'mac'
+        self.url = self.url.format(platform, self.config.arch)
+        self.tarball_name = "{0}-{1}-{2}-{3}.zip".format(self._name, platform,
+                                                        self.config.arch,
+                                                        self.version)
+        self.build_dir = os.path.join(os.path.dirname(self.build_dir),
+                                      self.tarball_name.replace('.zip', ''))
+        self.download_path = os.path.join(self.repo_dir, self.tarball_name)
+
+    def configure(self):
+        # Re-set executable permissions
+        # The zipfile module completely ignores perms
+        sdk_dir = os.path.join(self.build_dir, 'sdk')
+        for t_path in (os.path.join(sdk_dir, 'tools'),
+                       os.path.join(sdk_dir, 'platform-tools'),
+                       os.path.join(sdk_dir, 'build-tools', 'android-4.4W')):
+            tools = [os.path.join(t_path, f) for f in os.listdir(t_path) if \
+                        os.path.isfile(os.path.join(t_path, f))]
+            for t in tools:
+                if t.endswith('.exe') or \
+                    os.path.basename(t).find('.') == -1:
+                    # Only chmod +x files without extensions (OS X/Linux)
+                    # or .exe files (Windows)
+                    os.chmod(t, 0755)
+
+    def install(self):
+        shutil.rmtree(os.path.join(self.config.install_dir,
+                                   'opt', 'android-sdk'),
+                      True)
+        shutil.copytree(os.path.join(self.build_dir, 'sdk'),
+                        os.path.join(self.config.install_dir,
+                                     'opt', 'android-sdk'))
