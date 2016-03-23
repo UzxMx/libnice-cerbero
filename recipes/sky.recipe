@@ -1,0 +1,129 @@
+import re
+import shutil
+import tempfile
+
+def generate_gir_h_from_gir(gir_file, gir_h_file):
+    """
+    Generate a .gir.h file from the specified .gir file, and write to the
+    specified gir.h file location
+
+    @gir_file: The .gir file
+    @gir_h_file: The location to write the generated .gir.h file to
+    """
+    outfname = gir_h_file
+    # FIXME: xxd is provided by vim-common, and not installed by
+    # bootstrap/build-tools
+    hexdump = shell.check_call('xxd -i ' + gir_file, shell=True, split=False)
+    outf = open(outfname, 'w')
+    outf.write(hexdump)
+    # Append checksum to .gir.h file
+    shasum = shell.check_call('shasum -a 1 -b < ' + gir_file, shell=True,
+                              split=False)[:40]
+    sha1fname = gir_file + '.sha1'
+    sha1f = open(sha1fname, 'w')
+    sha1f.write(shasum)
+    sha1f.close()
+    hexdump = shell.check_call('xxd -i ' + sha1fname, shell=True,
+                               split=False)
+    outf.write(hexdump)
+    outf.close()
+    os.unlink(sha1fname)
+
+class Recipe(recipe.Recipe):
+	name = 'sky'
+	version = '1.0'
+	stype = SourceType.DEV
+	autoreconf = True
+	
+	deps = ['libnice']
+
+	def prepare(self):
+		if self.config.target_platform == Platform.ANDROID:
+			self.configure_options += ' --enable-sky-java --with-android-sdk=' + self.config.android_sdk_home + ' --with-android-ndk=' + self.config.toolchain_prefix
+
+			if self.config.target_arch == Architecture.ARMv7:
+				self.arch_name = "armeabi-v7a"
+			elif self.config.target_arch == Architecture.ARM:
+				self.arch_name = "armeabi"
+			elif self.config.target_arch == Architecture.ARM64:
+				self.arch_name = "arm64-v8a"
+			elif self.config.target_arch == Architecture.X86:
+				self.arch_name = "x86"
+			elif self.config.target_arch == Architecture.X86_64:
+				self.arch_name = "x86_64"
+			else:
+				raise FatalError("Unsupported Android architecture: " + self.config.target_arch)
+
+			self.files_devel = [
+			   'lib/jni/sky.jar',
+			   'lib/jni/sky-sources.jar',
+			   'lib/jni/sky-javadoc.jar'
+			]
+
+
+	def configure(self):
+		if self.config.target_platform != self.config.platform and \
+		   self.config.target_platform in (Platform.IOS, Platform.ANDROID):
+
+			host_prefix = os.path.join(self.config.prefix, '..',
+			                           '{0}_{1}'.format(self.config.platform,
+			                                            self.config.arch))
+
+			# Error out if there's no host build
+			err_nobuild = "You need to build sky for the host {0} " \
+			        "before you can cross-compile it for " \
+			        "{1}".format(self.config.platform,
+			                     self.config.target_platform)
+			gir_file_path = os.path.join(host_prefix, 'share', 'gir-1.0')
+			gir_file = 'Sky-' + self.version + '.gir'
+			if not os.path.isfile(os.path.join(gir_file_path, gir_file)):
+				raise Exception(err_nobuild)
+
+			# Generate Sky-<version>.gir.h from the Sky-<version>.gir in the host build,
+			# if it exists. If not, error out because that's the only way we
+			# have (yes, this is a hack)
+			# This is going to be fun if something causes an exception before
+			# we reset the cwd
+			old_cwd = os.getcwd()
+			os.chdir(gir_file_path)
+			gir_h_file = os.path.join(self.build_dir, 'Sky-' + self.version + '.gir.h')
+			# Generate the gir.h
+			generate_gir_h_from_gir(gir_file, gir_h_file)
+			if self.config.target_platform == Platform.ANDROID:
+			    with open(gir_file, 'r') as f:
+			    	content = f.read()
+			    # replace the shared-library name for the host with the one used for Android
+			    content = re.sub(r'shared-library="[^"]*"', 'shared-library="libsky_jni.so"', content)
+			    with open(os.path.join(self.build_dir, "bindings", "java", gir_file), 'w+') as f:
+			    	f.write(content)
+			os.chdir(old_cwd)
+		super(Recipe, self).configure()
+
+	def post_install(self):
+		if self.config.target_platform == Platform.ANDROID:
+			make_cmd = 'make -f "{0}" INPUT_LIBRARY="{1}" OUTPUT_LIBRARY="{2}" ' \
+			           'CERBERO_DATA_PATH="{3}" PREFIX="{4}" ' \
+			           'EXCLUDED_LIBS="{5} LIBTOOL_DEBUG=1"'
+			makefile = os.path.join(self.config.recipes_dir, self.name,
+			                        'Makefile.bundled-shared')
+			input_library = 'sky_jni'
+			jar_lib = 'lib' + input_library + '.so'
+			output_library = os.path.join(self.config.libdir, jar_lib)
+			extra_libs = ''
+			excluded_libs = ''
+			cmd = make_cmd.format(makefile, input_library, output_library, 
+				self.config.data_dir, self.config.prefix, extra_libs, excluded_libs)
+			shell.call(cmd)
+			# We need to repackage the jar file with the fixed library
+			jar_file = os.path.join(self.config.libdir, 'jni', 'sky.jar')
+			tempdir = tempfile.mkdtemp()
+			old_cwd = os.getcwd()
+			os.chdir(tempdir)
+			shell.call("jar -xvf " + jar_file)
+			shutil.rmtree("lib")
+			jar_lib_path = os.path.join("lib", self.arch_name)
+			os.makedirs(jar_lib_path)
+			shutil.copy(output_library, jar_lib_path)
+			os.chdir(old_cwd)
+			shell.call("jar -cvf {0} -C {1} .".format(jar_file, tempdir))
+			shutil.rmtree(tempdir)

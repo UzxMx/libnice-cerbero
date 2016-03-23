@@ -1,0 +1,9 @@
+# noinst_LTLIBRARIES v.s. lib_LTLIBRARIES
+
+# In sky's java Makefile.am, what does noinst_DATA mean? It seems that after adding 
+it, the contents in it will be built.
+
+# In sky's java Makefile.am, add BUILT_SOURCES before noinst_DATA makes sure that the contents
+in noinst_DATA will be built after the contents in BUILT_SOURCES finish. Why this?
+
+# In sky's java Makefile.am, how to list all java files?

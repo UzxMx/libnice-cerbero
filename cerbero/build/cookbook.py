@@ -221,7 +221,11 @@ class CookBook (object):
         @param step: name of the step
         @type step: bool
         '''
-        return step in self._recipe_status(recipe_name).steps
+        done = step in self._recipe_status(recipe_name).steps
+        recipe = self.get_recipe(recipe_name)
+        if recipe.stype == SourceType.DEV or recipe.stype == SourceType.USING_EXISTED:
+            done = False
+        return done
 
     def reset_recipe_status(self, recipe_name):
         '''
@@ -243,7 +247,11 @@ class CookBook (object):
         @return: True if the recipe needs to be build
         @rtype: bool
         '''
-        return self._recipe_status(recipe_name).needs_build
+        needs_build = self._recipe_status(recipe_name).needs_build
+        recipe = self.get_recipe(recipe_name)
+        if recipe.stype == SourceType.DEV or recipe.stype == SourceType.USING_EXISTED:
+            needs_build = True
+        return needs_build
 
     def list_recipe_deps(self, recipe_name):
         '''

@@ -69,6 +69,26 @@ class CustomSource (Source):
     def extract(self):
         pass
 
+class DevSource(Source):
+
+    def __init__(self):
+        Source.__init__(self)
+
+    def fetch(self):
+        pass
+
+    def extract(self):
+        if os.path.exists(self.build_dir):
+            shutil.rmtree(self.build_dir)
+        shell.call('cp -R %s %s' %(self.repo_dir, self.build_dir))
+
+class UsingExisted(Source):
+
+    def fetch(self):
+        pass
+
+    def extract(self):
+        pass
 
 class Tarball (Source):
     '''
@@ -363,3 +383,5 @@ class SourceType (object):
     GIT = Git
     GIT_TARBALL = GitExtractedTarball
     SVN = Svn
+    DEV = DevSource
+    USING_EXISTED = UsingExisted

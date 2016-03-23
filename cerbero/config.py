@@ -94,7 +94,8 @@ class Config (object):
                    'recipes_remotes', 'ios_platform', 'extra_build_tools',
                    'distro_packages_install', 'interactive',
                    'target_arch_flags', 'sysroot', 'isysroot',
-                   'extra_lib_path', 'cached_sources', 'tools_prefix']
+                   'extra_lib_path', 'cached_sources', 'tools_prefix',
+                   'android_sdk_home']
 
     def __init__(self):
         self._check_uninstalled()
@@ -197,6 +198,8 @@ class Config (object):
         pkgconfigbin = os.path.join(self.build_tools_prefix, 'bin', 'pkg-config')
         pkgconfigdatadir = os.path.join(prefix, 'share', 'pkgconfig')
         pkgconfigdir = os.path.join(libdir, 'pkgconfig')
+        pkgconfigdir = self._join_path(pkgconfigdir,
+            os.path.join(self.build_tools_prefix, 'lib', 'pkgconfig'))
         typelibpath = os.path.join(libdir, 'girepository-1.0')
         xdgdatadir = os.path.join(prefix, 'share')
         xdgconfigdir = os.path.join(prefix, 'etc', 'xdg')

@@ -1,0 +1,6 @@
+# Autoconf Macro
+
+## PKG_CHECK_MODULES(VARIABLE-PREFIX, MODULES, [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
+
+This macro will define two variables, they are [VARIABLE-PREFIX]_CFLAGS and [VARIABLE-PREFIX]_LIBS.
+

@@ -1,0 +1,38 @@
+# Glossary
+
+## Build tools
+
+Build tools are tools that can help build library. They are executable. That is to say, 
+those executables are dependent, anything else will not be dependent by the library to be
+built. Some examples in those tools include m4, make, autoconf, pkg-config.
+
+# Class Design
+
+## SourceType
+
+## BuildType
+
+## Recipe
+
+Recipe is inherited from FilesProvider, a subclass derived from SourceType, and 
+a subclass derived from BuildType. The dynamic multi-inheritance is implemented
+by using metaclass in python. As a result, the recipe object can fetch source 
+codes from somewhere, can be built in a predefined way.
+
+# Misc
+
+## Environment variables in python's sub shells
+
+Some programs may be influenced by the exported environment variables, such as the 
+configure script. During the config loading stage, some common environment variables 
+will be put in python os.env dict. When a shell is invoked, the os.env is copied into 
+the new shell. I think those environment variables all have export attribute, so 
+when execute a command in the shell, these variables can be exported into the new process.
+
+## pkg-config
+
+The build system use its own pkg-config utility, no mattter whether the host has 
+pkg-config or not. PKG_CONFIG, PKG_CONFIG_PATH, PKG_CONFIG_LIBDIR environment 
+variables are put in os.env in cerbero/config.py file (see do_set_env() method). 
+The configure script will use pkg-config provided by the environment variables rather 
+than the one in the host system.

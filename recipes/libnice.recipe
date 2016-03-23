@@ -3,7 +3,8 @@
 class Recipe(recipe.Recipe):
     name = 'libnice'
     version = '0.1.13'
-    stype = SourceType.TARBALL
+    # stype = SourceType.USING_EXISTED
+    stype = SourceType.DEV
     url = 'http://nice.freedesktop.org/releases/%(name)s-%(version)s.tar.gz'
     disable_introspection = True
     licenses = [License.LGPLv2_1Plus, License.MPLv1_1]

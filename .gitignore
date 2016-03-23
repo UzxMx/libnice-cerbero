@@ -21,3 +21,5 @@ MANIFEST.in
 /sources
 
 *.cache
+
+/extra_config/*.py
